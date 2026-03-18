@@ -7,18 +7,15 @@ const CORS = {
   "Content-Type": "application/json",
 };
 
-// Extracts plain text from HTML for auto-generating title/excerpt
 function stripTags(html) {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-// Pulls the h1 text from the newsletter HTML
 function extractTitle(html) {
   const match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
   return match ? stripTags(match[1]) : "SSKIN CITY Newsletter";
 }
 
-// Pulls the first paragraph text for the blog card preview
 function extractExcerpt(html) {
   const match = html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
   if (!match) return "";
@@ -26,12 +23,25 @@ function extractExcerpt(html) {
   return text.length > 180 ? text.slice(0, 180) + "…" : text;
 }
 
-// Removes script tags for basic security
 function sanitize(html) {
   return html.replace(
     /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
     ""
   );
+}
+
+function calcReadTime(html) {
+  const plainText = html.replace(/<[^>]*>/g, " ");
+  const words = plainText.trim().split(/\s+/).filter(w => w.length > 0).length;
+  const minutes = Math.max(1, Math.round(words / 200));
+  return `${minutes} min read`;
+}
+
+function calcIssue() {
+  const now = new Date();
+  const month = now.toLocaleString("en-US", { month: "long" });
+  const year = now.getFullYear();
+  return `${month} ${year}`;
 }
 
 export const handler = async (event) => {
@@ -99,12 +109,11 @@ export const handler = async (event) => {
     }
 
     const safeHtml = sanitize(data.html);
-
-    // Auto-extract title and excerpt from the HTML if not sent by Activepieces
-    const title = data.title || extractTitle(safeHtml);
-    const excerpt = data.excerpt || extractExcerpt(safeHtml);
-
-    const id = `nl_${Date.now()}`;
+    const title    = data.title   || extractTitle(safeHtml);
+    const excerpt  = data.excerpt || extractExcerpt(safeHtml);
+    const readTime = calcReadTime(safeHtml);
+    const issue    = calcIssue();
+    const id       = `nl_${Date.now()}`;
 
     try {
       await store.setJSON(id, {
@@ -114,14 +123,14 @@ export const handler = async (event) => {
         html: safeHtml,
         date: data.date || new Date().toISOString(),
         category: data.category || "Newsletter",
-        readTime: data.readTime || "5 min read",
-        issue: data.issue || "",
+        readTime,
+        issue,
       });
 
       return {
         statusCode: 200,
         headers: CORS,
-        body: JSON.stringify({ success: true, id, title }),
+        body: JSON.stringify({ success: true, id, title, readTime, issue }),
       };
     } catch (err) {
       return {
