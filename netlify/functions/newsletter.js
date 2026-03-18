@@ -49,7 +49,12 @@ export const handler = async (event) => {
     return { statusCode: 200, headers: CORS, body: "" };
   }
 
-  const store = getStore({ name: "newsletters", consistency: "strong" });
+  const store = getStore({
+    name: "newsletters",
+    consistency: "strong",
+    siteID: process.env.NETLIFY_SITE_ID,
+    token: process.env.NETLIFY_AUTH_TOKEN,
+  });
 
   // ── GET: website fetches all newsletters on page load ──
   if (event.httpMethod === "GET") {
