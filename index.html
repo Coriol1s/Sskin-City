@@ -710,38 +710,12 @@ button{border:none;cursor:pointer;font-family:var(--font-body)}
       <h2 class="section-h2" id="wn-heading">This Week's <em>Newsletter</em></h2>
       <p class="section-lead" style="margin:0 auto;text-align:center;">Stay updated with the latest from Dr Bhoopallka's desk — treatment news, seasonal skin tips, and clinic announcements.</p>
     </div>
-    <div class="wn-card reveal">
-      <div class="wn-card-header">
-        <div class="wn-card-header-left">
-          <h3>SSKIN CITY Monthly Digest</h3>
-          <p>From the desk of Dr P K Bhoopallka, Dermatologist &amp; Cosmetic Laser Surgeon</p>
-        </div>
-        <div class="wn-issue-badge">📬 March 2025 · Issue #03</div>
-      </div>
-      <div class="wn-body">
-        <div class="wn-section-title">🌟 This Month's Highlight</div>
-        <p class="wn-text">We are thrilled to announce that SSKIN CITY now offers the <strong>first-time USFDA approved laser treatments</strong> in the region. These cutting-edge systems represent the gold standard in cosmetic laser therapy, delivering superior results with greater safety for all skin types, including Indian skin tones.</p>
-        <div class="wn-highlight">
-          "As dermatologists, our commitment is not just to treat skin — it is to understand it, respect it, and help it thrive. These new laser systems allow us to do exactly that with greater precision than ever before." — <em>Dr P K Bhoopallka</em>
-        </div>
-
-        <div class="wn-section-title">🌸 Seasonal Skin Tips — Summer Prep</div>
-        <p class="wn-text">As temperatures rise, your skin's needs change. Here are Dr Bhoopallka's top recommendations for keeping skin healthy and radiant this summer:</p>
-        <div class="wn-tip-grid">
-          <div class="wn-tip"><div class="wn-tip-icon">☀️</div><div class="wn-tip-title">SPF 50+ Daily</div><div class="wn-tip-text">Apply broad-spectrum sunscreen every 2–3 hours, even indoors near windows.</div></div>
-          <div class="wn-tip"><div class="wn-tip-icon">💧</div><div class="wn-tip-title">Deep Hydration</div><div class="wn-tip-text">Switch to a lightweight hyaluronic acid serum to maintain moisture without clogging pores.</div></div>
-          <div class="wn-tip"><div class="wn-tip-icon">🧴</div><div class="wn-tip-title">Gentle Cleansing</div><div class="wn-tip-text">Cleanse twice daily with a mild, pH-balanced cleanser to control excess sebum production.</div></div>
-        </div>
-
-        <div class="wn-section-title">🏥 Clinic News</div>
-        <p class="wn-text">Our clinic hours remain <strong>Monday to Saturday, 10:00 AM to 8:00 PM</strong>. We recommend booking appointments in advance as slots fill quickly. The clinic is conveniently located on the 2nd Floor, Rajani Tower, beside Meghdoot Cinema, Hill Cart Road, Siliguri.</p>
-        <p class="wn-text">For existing patients: please bring your previous treatment records on your next visit. For new patients, a full skin consultation is included with your first appointment at no extra charge.</p>
-      </div>
-      <div class="wn-footer">
-        <div class="wn-footer-text">📍 Siliguri, West Bengal &nbsp;·&nbsp; 📞 +91 74014 56456 &nbsp;·&nbsp; Published weekly by SSKIN CITY</div>
-        <a href="#appointment" class="wn-cta">Book a Consultation →</a>
-      </div>
-    </div>
+    <div id="wn-card-container">
+  <div style="text-align:center;padding:60px 20px;color:var(--warm-gray);">
+    <div style="font-size:2rem;margin-bottom:12px;">📬</div>
+    <p>Loading latest newsletter...</p>
+  </div>
+</div>
   </div>
 </section>
 
@@ -1002,6 +976,102 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     }
   });
 });
+</script>
+
+<script>
+async function loadNewsletters() {
+  const container = document.getElementById('wn-card-container');
+  const blogGrid  = document.querySelector('.blog-grid');
+
+  try {
+    const res = await fetch('/api/newsletter');
+    if (!res.ok) throw new Error('Fetch failed');
+    const newsletters = await res.json();
+
+    if (!newsletters || newsletters.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:60px 20px;color:var(--warm-gray);">
+          <div style="font-size:2rem;margin-bottom:12px;">📭</div>
+          <p>No newsletters yet. Check back soon!</p>
+        </div>`;
+      return;
+    }
+
+    const latest = newsletters[0];
+
+    container.innerHTML = `
+      <div class="wn-card">
+        <div class="wn-card-header">
+          <div class="wn-card-header-left">
+            <h3>SSKIN CITY Monthly Digest</h3>
+            <p>From the desk of Dr P K Bhoopallka, Dermatologist &amp; Cosmetic Laser Surgeon</p>
+          </div>
+          ${latest.issue
+            ? `<div class="wn-issue-badge">${latest.issue}</div>`
+            : `<div class="wn-issue-badge">${fmtDate(latest.date)}</div>`}
+        </div>
+        <div class="wn-body" style="max-width:100%;overflow-x:hidden;">
+          ${latest.html}
+        </div>
+        <div class="wn-footer">
+          <span class="wn-footer-text">Published by SSKIN CITY &nbsp;·&nbsp; Siliguri, West Bengal</span>
+          <a href="#appointment" class="wn-cta">Book a Consultation &#8594;</a>
+        </div>
+      </div>`;
+
+    if (blogGrid) {
+      newsletters.forEach((nl, i) => {
+        const card = document.createElement('article');
+        card.className = 'blog-card' + (i === 0 ? ' featured' : '');
+        card.style.cursor = 'pointer';
+        card.innerHTML = `
+          <div class="blog-img" style="background:var(--grad-main);">
+            <div class="blog-img-label">Newsletter</div>
+            <div class="blog-img-emoji" aria-hidden="true">&#128231;</div>
+          </div>
+          <div class="blog-body">
+            <div class="blog-cat">${safe(nl.category)}</div>
+            <h3 class="blog-title">${safe(nl.title)}</h3>
+            <p class="blog-excerpt">${safe(nl.excerpt)}</p>
+            <div class="blog-meta">
+              <span>${safe(nl.readTime)}</span>
+              <span class="blog-meta-dot"></span>
+              <span>${fmtDate(nl.date)}</span>
+            </div>
+          </div>`;
+        card.addEventListener('click', () => {
+          document.getElementById('weekly-newsletter')
+            ?.scrollIntoView({ behavior: 'smooth' });
+        });
+        blogGrid.appendChild(card);
+      });
+    }
+
+  } catch (err) {
+    console.error('Newsletter error:', err);
+    container.innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--warm-gray);">
+        <p>Could not load newsletter. Please refresh the page.</p>
+      </div>`;
+  }
+}
+
+function fmtDate(iso) {
+  try {
+    return new Date(iso).toLocaleDateString('en-IN', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    });
+  } catch { return ''; }
+}
+
+function safe(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.addEventListener('DOMContentLoaded', loadNewsletters);
 </script>
 </body>
 </html>
